@@ -1,268 +1,166 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StudyHive</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
-  body { background: #f4f6fb; color: #1a2233; min-height: 100vh; }
-  .hidden { display: none !important; }
-  button { cursor: pointer; border: none; border-radius: 8px; padding: 9px 16px; font-size: 14px; }
-  .btn-primary { background: #3b5bdb; color: #fff; }
-  .btn-secondary { background: #e9ecf5; color: #1a2233; }
-  input, textarea { width: 100%; padding: 10px 12px; border: 1px solid #d3d9e8; border-radius: 8px; font-size: 14px; margin-bottom: 10px; }
-  label { font-size: 13px; font-weight: 600; display: block; margin-bottom: 4px; }
-  .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.06); margin-bottom: 14px; }
-  .auth-wrap { max-width: 380px; margin: 60px auto; padding: 0 16px; }
-  .app-wrap { max-width: 900px; margin: 0 auto; padding: 20px; }
-  .topbar { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: #fff; border-bottom: 1px solid #e6e9f2; }
-  .topbar h1 { font-size: 20px; color: #3b5bdb; }
-  .tabs { display: flex; gap: 8px; margin: 16px 0; flex-wrap: wrap; }
-  .tab { background: #e9ecf5; padding: 8px 14px; border-radius: 20px; font-size: 14px; }
-  .tab.active { background: #3b5bdb; color: #fff; }
-  .msg { padding: 8px 12px; border-radius: 12px; margin-bottom: 6px; max-width: 75%; }
-  .msg.me { background: #3b5bdb; color: #fff; margin-left: auto; }
-  .msg.other { background: #e9ecf5; }
-  .msg .who { font-size: 11px; opacity: .7; display: block; }
-  .small { font-size: 12px; color: #6b7280; }
-  .row { display: flex; gap: 8px; align-items: center; }
-  .badge { display: inline-block; background: #e9ecf5; border-radius: 10px; padding: 2px 8px; font-size: 12px; margin: 2px; }
-  .error { background: #ffe3e3; border: 1px solid #ffa8a8; color: #c92a2a; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🐝 StudyHive</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0f1115;
+      color: #e6e8ec;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: #1a1d24;
+      padding: 2.5rem;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.4);
+    }
+    h1 { font-size: 1.6rem; margin-bottom: .3rem; }
+    p.sub { color: #8b93a1; margin-bottom: 1.8rem; font-size: .9rem; }
+    label { display: block; font-size: .85rem; margin-bottom: .4rem; color: #b6bcc8; }
+    input {
+      width: 100%;
+      padding: .7rem .8rem;
+      margin-bottom: 1.1rem;
+      border: 1px solid #2c313c;
+      border-radius: 8px;
+      background: #12151b;
+      color: #e6e8ec;
+      font-size: .95rem;
+    }
+    input:focus { outline: none; border-color: #f59e0b; }
+    button {
+      width: 100%;
+      padding: .75rem;
+      border: none;
+      border-radius: 8px;
+      background: #f59e0b;
+      color: #1a1d24;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover { background: #fbbf24; }
+    .divider { text-align: center; color: #8b93a1; margin: 1.2rem 0; font-size: .85rem; }
+    .link-btn {
+      background: transparent;
+      border: 1px solid #2c313c;
+      color: #e6e8ec;
+    }
+    .link-btn:hover { background: #242933; }
+    #msg { margin-top: 1rem; font-size: .85rem; text-align: center; min-height: 1.2em; }
+    #msg.error { color: #f87171; }
+    #msg.ok { color: #4ade80; }
+    /* Logged-in view (hidden by default) */
+    #app { display: none; text-align: center; }
+    #app h2 { margin-bottom: 1rem; }
+  </style>
 </head>
 <body>
 
-<!-- ===== AUTH ===== -->
-<div id="authScreen" class="auth-wrap">
-  <div class="card">
-    <h1 style="color:#3b5bdb; margin-bottom:6px;">🐝 StudyHive</h1>
-    <p class="small" style="margin-bottom:16px;">Social study app — sign up with any email and password.</p>
-    <div id="authError" class="error hidden"></div>
-    <label>Email</label>
-    <input id="authEmail" type="email" placeholder="you@example.com">
-    <label>Password</label>
-    <input id="authPass" type="password" placeholder="min 6 characters">
-    <button class="btn-primary" style="width:100%;" onclick="signUp()">Create account</button>
-    <p style="text-align:center; margin:10px 0;" class="small">or</p>
-    <button class="btn-secondary" style="width:100%;" onclick="signIn()">Log in</button>
-  </div>
-</div>
-
-<!-- ===== APP ===== -->
-<div id="appScreen" class="hidden">
-  <div class="topbar">
+  <!-- Signup / Login view -->
+  <div class="card" id="auth-view">
     <h1>🐝 StudyHive</h1>
-    <div class="row">
-      <span id="whoAmI" class="small"></span>
-      <button class="btn-secondary" onclick="logout()">Log out</button>
-    </div>
+    <p class="sub">Social study app — sign up with any email and password.</p>
+
+    <form id="auth-form">
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="you@example.com" required />
+
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="min 6 characters" minlength="6" required />
+
+      <button type="submit" id="submit-btn">Create account</button>
+    </form>
+
+    <div class="divider">or</div>
+    <button class="link-btn" id="toggle-btn">Log in</button>
+
+    <div id="msg"></div>
   </div>
-  <div class="app-wrap">
-    <div class="tabs">
-      <button class="tab active" data-tab="groups" onclick="showTab('groups')">Groups</button>
-      <button class="tab" data-tab="dms" onclick="showTab('dms')">DMs</button>
-      <button class="tab" data-tab="profile" onclick="showTab('profile')">Profile</button>
-    </div>
 
-    <!-- GROUPS -->
-    <div id="tab-groups" class="tab-content">
-      <div class="card">
-        <h3>Create a group</h3>
-        <input id="newGroupName" placeholder="Group name, e.g. Biology Exam 2026">
-        <button class="btn-primary" onclick="createGroup()">Create group</button>
-      </div>
-      <div class="card">
-        <h3>Join a group</h3>
-        <input id="joinGroupCode" placeholder="Enter group code">
-        <button class="btn-secondary" onclick="joinGroup()">Join</button>
-      </div>
-      <div id="groupList"></div>
-    </div>
-
-    <!-- DMS -->
-    <div id="tab-dms" class="tab-content hidden">
-      <div class="card">
-        <h3>New message</h3>
-        <input id="dmTo" placeholder="Recipient email">
-        <textarea id="dmBody" rows="2" placeholder="Message..."></textarea>
-        <button class="btn-primary" onclick="sendDM()">Send</button>
-      </div>
-      <div id="dmList"></div>
-    </div>
-
-    <!-- PROFILE -->
-    <div id="tab-profile" class="tab-content hidden">
-      <div class="card">
-        <h3>Profile</h3>
-        <input id="profileName" placeholder="Display name">
-        <input id="profileBio" placeholder="Short bio">
-        <button class="btn-primary" onclick="saveProfile()">Save</button>
-      </div>
-    </div>
+  <!-- Logged-in view -->
+  <div class="card" id="app">
+    <h2>🎉 You're in, <span id="user-email"></span>!</h2>
+    <p class="sub">Welcome to StudyHive.</p>
+    <button class="link-btn" id="logout-btn">Log out</button>
   </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-const SUPABASE_URL = 'https://pobooxnvlsvvxwcxsowf.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvYm9veG52bHN2dnh3Y3hzb3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwMTk3NjQsImV4cCI6MjEwODU5NTc2NH0.wq44wD8ldJreamrY35LxgR637jrHcwUi6RcPbG7kw6I';
+  <script>
+    const supabase = window.supabase.createClient(
+      'https://pobooxnvlsvvxwcxsowf.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvYm9veG52bHN2dnh3Y3hzb3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwMTk3NjQsImV4cCI6MjEwODU5NTc2NH0.wq44wD8ldJreamrY35LxgR637jrHcwUi6RcPbG7kw6I'
+    );
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let isSignup = true;
+    const authView = document.getElementById('auth-view');
+    const appView = document.getElementById('app');
+    const msg = document.getElementById('msg');
+    const submitBtn = document.getElementById('submit-btn');
+    const toggleBtn = document.getElementById('toggle-btn');
 
-// ===== AUTH =====
-async function signUp() {
-  const email = document.getElementById('authEmail').value.trim();
-  const pass = document.getElementById('authPass').value;
-  const err = document.getElementById('authError');
-  err.classList.add('hidden');
-  if (!email || pass.length < 6) {
-    err.textContent = 'Enter a valid email and a password of at least 6 characters.';
-    err.classList.remove('hidden'); return;
-  }
-  const { error } = await supabase.auth.signUp({ email, password: pass });
-  if (error) { err.textContent = error.message; err.classList.remove('hidden'); return; }
-  loadApp();
-}
+    // Toggle between signup and login
+    toggleBtn.addEventListener('click', () => {
+      isSignup = !isSignup;
+      submitBtn.textContent = isSignup ? 'Create account' : 'Log in';
+      toggleBtn.textContent = isSignup ? 'Log in' : 'Create account';
+      msg.textContent = '';
+    });
 
-async function signIn() {
-  const email = document.getElementById('authEmail').value.trim();
-  const pass = document.getElementById('authPass').value;
-  const err = document.getElementById('authError');
-  err.classList.add('hidden');
-  const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
-  if (error) { err.textContent = 'Wrong email or password.'; err.classList.remove('hidden'); return; }
-  loadApp();
-}
+    // Handle submit
+    document.getElementById('auth-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msg.textContent = '';
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
 
-async function logout() {
-  await supabase.auth.signOut();
-  location.reload();
-}
+      let result;
+      if (isSignup) {
+        result = await supabase.auth.signUp({ email, password });
+      } else {
+        result = await supabase.auth.signInWithPassword({ email, password });
+      }
 
-// ===== APP LOAD =====
-async function loadApp() {
-  document.getElementById('authScreen').classList.add('hidden');
-  document.getElementById('appScreen').classList.remove('hidden');
-  const { data: { user } } = await supabase.auth.getUser();
-  document.getElementById('whoAmI').textContent = user.email;
-  renderGroups();
-  renderDMs();
-  renderProfile();
-}
+      if (result.error) {
+        msg.textContent = result.error.message;
+        msg.className = 'error';
+      } else if (isSignup) {
+        msg.textContent = 'Check your email to confirm your account! 📧';
+        msg.className = 'ok';
+      } else {
+        showApp(result.data.user.email);
+      }
+    });
 
-// ===== GROUPS =====
-async function createGroup() {
-  const name = document.getElementById('newGroupName').value.trim();
-  if (!name) return;
-  const code = Math.random().toString(36).slice(2, 7).toUpperCase();
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: group, error } = await supabase
-    .from('groups').insert({ code, name, created_by: user.id }).select().single();
-  if (error) { alert(error.message); return; }
-  await supabase.from('group_members').insert({ group_id: group.id, user_id: user.id });
-  document.getElementById('newGroupName').value = '';
-  renderGroups();
-}
+    // Log out
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      showAuth();
+    });
 
-async function joinGroup() {
-  const code = document.getElementById('joinGroupCode').value.trim().toUpperCase();
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: group } = await supabase.from('groups').select().eq('code', code).single();
-  if (!group) { alert('No group with that code.'); return; }
-  await supabase.from('group_members').insert({ group_id: group.id, user_id: user.id });
-  document.getElementById('joinGroupCode').value = '';
-  renderGroups();
-}
+    // On load: if already logged in, skip auth
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) showApp(data.session.user.email);
+    });
 
-async function sendGroupMsg(groupId) {
-  const inp = document.getElementById('gmsg-' + groupId);
-  const text = inp.value.trim(); if (!text) return;
-  const { data: { user } } = await supabase.auth.getUser();
-  await supabase.from('group_messages').insert({ group_id: groupId, user_id: user.id, text });
-  inp.value = '';
-  renderGroups();
-}
-
-async function renderGroups() {
-  const box = document.getElementById('groupList');
-  box.innerHTML = '<p class="small">Loading groups...</p>';
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: memberships } = await supabase
-    .from('group_members').select('group_id').eq('user_id', user.id);
-  const ids = memberships.map(m => m.group_id);
-  if (!ids.length) { box.innerHTML = '<p class="small">You are not in any groups yet.</p>'; return; }
-  const { data: groups } = await supabase.from('groups').select('*').in('id', ids);
-  box.innerHTML = '';
-  for (const g of groups) {
-    const { data: msgs } = await supabase
-      .from('group_messages').select('*, profiles(name)').eq('group_id', g.id).order('created_at').limit(20);
-    const el = document.createElement('div');
-    el.className = 'card';
-    let html = msgs.map(m =>
-      `<div class="msg ${m.user_id===user.id?'me':'other'}"><span class="who">${m.profiles?.name || 'user'}</span>${m.text}</div>`
-    ).join('');
-    el.innerHTML = `
-      <h3>${g.name} <span class="badge">${g.code}</span></h3>
-      <div style="margin:10px 0;">${html || '<p class="small">No messages yet.</p>'}</div>
-      <div class="row"><input id="gmsg-${g.id}" placeholder="Message group...">
-      <button class="btn-primary" onclick="sendGroupMsg('${g.id}')">Send</button></div>`;
-    box.appendChild(el);
-  }
-}
-
-// ===== DMS =====
-async function sendDM() {
-  const to = document.getElementById('dmTo').value.trim();
-  const text = document.getElementById('dmBody').value.trim();
-  if (!to || !text) return;
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: recipientId, error } = await supabase.rpc('find_user_by_email', { target_email: to });
-  if (error || !recipientId) { alert('No account with that email.'); return; }
-  await supabase.from('dms').insert({ sender_id: user.id, recipient_id: recipientId, text });
-  document.getElementById('dmBody').value = '';
-  renderDMs();
-}
-
-async function renderDMs() {
-  const box = document.getElementById('dmList');
-  box.innerHTML = '<h3>Your messages</h3><p class="small">Loading...</p>';
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: msgs } = await supabase
-    .from('dms').select('*').or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`).order('created_at').limit(30);
-  box.innerHTML = '<h3>Your messages</h3>' + (msgs.length ? '' : '<p class="small">No messages yet.</p>');
-  for (const m of msgs) {
-    const isMe = m.sender_id === user.id;
-    box.innerHTML += `<div class="msg ${isMe?'me':'other'}"><span class="who">${isMe?'me':m.sender_id}</span>${m.text}</div>`;
-  }
-}
-
-// ===== PROFILE =====
-async function saveProfile() {
-  const name = document.getElementById('profileName').value.trim();
-  const bio = document.getElementById('profileBio').value.trim();
-  const { data: { user } } = await supabase.auth.getUser();
-  await supabase.from('profiles').upsert({ id: user.id, name, bio });
-}
-
-async function renderProfile() {
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from('profiles').select().eq('id', user.id).single();
-  document.getElementById('profileName').value = profile?.name || user.email;
-  document.getElementById('profileBio').value = profile?.bio || '';
-}
-
-// ===== TABS =====
-function showTab(tab) {
-  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-  document.getElementById('tab-' + tab).classList.remove('hidden');
-}
-
-// Auto-login
-supabase.auth.getSession().then(({ data }) => {
-  if (data.session) loadApp();
-});
-</script>
+    function showApp(email) {
+      authView.style.display = 'none';
+      appView.style.display = 'block';
+      document.getElementById('user-email').textContent = email;
+    }
+    function showAuth() {
+      appView.style.display = 'none';
+      authView.style.display = 'block';
+    }
+  </script>
 </body>
 </html>
