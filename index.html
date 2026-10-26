@@ -217,10 +217,9 @@ async function sendDM() {
   const text = document.getElementById('dmBody').value.trim();
   if (!to || !text) return;
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: recipient } = await supabase.auth.admin.listUsers();
-  const found = recipient.users.find(u => u.email === to);
-  if (!found) { alert('No account with that email.'); return; }
-  await supabase.from('dms').insert({ sender_id: user.id, recipient_id: found.id, text });
+  const { data: recipientId, error } = await supabase.rpc('find_user_by_email', { target_email: to });
+  if (error || !recipientId) { alert('No account with that email.'); return; }
+  await supabase.from('dms').insert({ sender_id: user.id, recipient_id: recipientId, text });
   document.getElementById('dmBody').value = '';
   renderDMs();
 }
